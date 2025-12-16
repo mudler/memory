@@ -1,3 +1,3 @@
-module github.com/pbnjay/memory
+module github.com/mudler/memory
 
 go 1.16
