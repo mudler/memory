@@ -47,3 +47,10 @@ func sysFreeMemory() uint64 {
 	}
 	return freePages * pageSize
 }
+
+func sysAvailableMemory() uint64 {
+	// On macOS, available memory includes free + inactive + purgeable pages.
+	// For simplicity, we fall back to free memory here.
+	// A more accurate implementation would parse vm_stat for these categories.
+	return sysFreeMemory()
+}

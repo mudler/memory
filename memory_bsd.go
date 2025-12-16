@@ -17,3 +17,8 @@ func sysFreeMemory() uint64 {
 	}
 	return s
 }
+
+func sysAvailableMemory() uint64 {
+	// On BSD systems, hw.usermem already represents available memory.
+	return sysFreeMemory()
+}

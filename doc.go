@@ -22,3 +22,17 @@ func TotalMemory() uint64 {
 func FreeMemory() uint64 {
 	return sysFreeMemory()
 }
+
+// AvailableMemory returns the available system memory in bytes.
+//
+// Available memory is an estimate of how much memory is available for
+// starting new applications, without swapping. It accounts for reclaimable
+// memory such as buffers and cache that can be freed if needed.
+//
+// On Linux, this reads MemAvailable from /proc/meminfo (available since
+// kernel 3.14). On other systems, it may fall back to FreeMemory.
+//
+// If available memory size could not be determined, then 0 is returned.
+func AvailableMemory() uint64 {
+	return sysAvailableMemory()
+}

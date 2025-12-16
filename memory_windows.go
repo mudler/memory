@@ -58,3 +58,8 @@ func sysFreeMemory() uint64 {
 	}
 	return msx.ullAvailPhys
 }
+
+func sysAvailableMemory() uint64 {
+	// On Windows, ullAvailPhys already represents available physical memory.
+	return sysFreeMemory()
+}
