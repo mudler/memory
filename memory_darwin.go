@@ -2,12 +2,6 @@
 
 package memory
 
-import (
-	"os/exec"
-	"regexp"
-	"strconv"
-)
-
 func sysTotalMemory() uint64 {
 	s, err := sysctlUint64("hw.memsize")
 	if err != nil {
@@ -17,40 +11,30 @@ func sysTotalMemory() uint64 {
 }
 
 func sysFreeMemory() uint64 {
-	cmd := exec.Command("vm_stat")
-	outBytes, err := cmd.Output()
+	pageSize, err := sysctlUint32("vm.pagesize")
+	if err != nil || pageSize == 0 {
+		pageSize = 16384
+	}
+
+	freePages, err := sysctlUint32("vm.page_free_count")
 	if err != nil {
 		return 0
 	}
 
-	rePageSize := regexp.MustCompile("page size of ([0-9]*) bytes")
-	reFreePages := regexp.MustCompile("Pages free: *([0-9]*)\\.")
-
-	// default: page size of 4096 bytes
-	matches := rePageSize.FindSubmatchIndex(outBytes)
-	pageSize := uint64(4096)
-	if len(matches) == 4 {
-		pageSize, err = strconv.ParseUint(string(outBytes[matches[2]:matches[3]]), 10, 64)
-		if err != nil {
-			return 0
-		}
-	}
-
-	// ex: Pages free:                             1126961.
-	matches = reFreePages.FindSubmatchIndex(outBytes)
-	freePages := uint64(0)
-	if len(matches) == 4 {
-		freePages, err = strconv.ParseUint(string(outBytes[matches[2]:matches[3]]), 10, 64)
-		if err != nil {
-			return 0
-		}
-	}
-	return freePages * pageSize
+	return uint64(freePages) * uint64(pageSize)
 }
 
 func sysAvailableMemory() uint64 {
-	// On macOS, available memory includes free + inactive + purgeable pages.
-	// For simplicity, we fall back to free memory here.
-	// A more accurate implementation would parse vm_stat for these categories.
-	return sysFreeMemory()
+	pageSize, err := sysctlUint32("vm.pagesize")
+	if err != nil || pageSize == 0 {
+		pageSize = 16384
+	}
+
+	free, _ := sysctlUint32("vm.page_free_count")
+	purgeable, _ := sysctlUint32("vm.page_purgeable_count")
+	speculative, _ := sysctlUint32("vm.page_speculative_count")
+
+	// Available memory includes free pages plus pages that can be reclaimed
+	// without swapping (purgeable and speculative pages)
+	return uint64(free+purgeable+speculative) * uint64(pageSize)
 }
